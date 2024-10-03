@@ -1,0 +1,14 @@
+STEPs for Fuzzy Membership
+1. Normalize the image
+2. Apply Fuzzy function to each pixel: https://pro.arcgis.com/en/pro-app/latest/tool-reference/spatial-analyst/fuzzy-membership.htm 
+  I am leaning towards Fuzzy MS Small -> based on a specified mean and standard deviation,  smaller input values are more likely to be a member of the set
+  Spatical Analyst https://pro.arcgis.com/en/pro-app/latest/arcpy/spatial-analyst/fuzzymssmall-class.htm
+3. Hesitation degree
+  possible equations: https://ieeexplore.ieee.org/abstract/document/10478222
+4. Get Intuitionistic Fuzzy Image
+
+
+
+Spatial Frequency for edge detection
+https://www.sciencedirect.com/science/article/pii/S1566253513001401#f0030
+
