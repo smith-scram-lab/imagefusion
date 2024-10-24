@@ -45,15 +45,16 @@ def fuse_images(imageA, imageB, block_size=8):
 
     return fused_image
 
-for i in range(956):
-    image1 = cv2.imread(os.path.join('polar_tt_predict_C_raw', str(i) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
-    image2 = cv2.imread(os.path.join('polar_vp_predict_C_raw', str(i) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
-    image3 = fuse_images(image1,image2)
-    result = cv2.imread(os.path.join('label', str(i) + '.tif'), cv2.IMREAD_GRAYSCALE)
+# # just for testing
+# for i in range(956):
+#     image1 = cv2.imread(os.path.join('polar_tt_predict_C_raw', str(i) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
+#     image2 = cv2.imread(os.path.join('polar_vp_predict_C_raw', str(i) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
+#     image3 = fuse_images(image1,image2)
+#     result = cv2.imread(os.path.join('label', str(i) + '.tif'), cv2.IMREAD_GRAYSCALE)
 
-    cv2.imwrite(os.path.join('compare', str(i) + '_tt.png'), image1)
-    cv2.imwrite(os.path.join('compare', str(i) + '_vp.png'), image2)
-    cv2.imwrite(os.path.join('compare', str(i) + '_sf.png'), image3)
-    cv2.imwrite(os.path.join('compare', str(i) + '_label.png'), result)
+#     cv2.imwrite(os.path.join('compare', str(i) + '_tt.png'), image1)
+#     cv2.imwrite(os.path.join('compare', str(i) + '_vp.png'), image2)
+#     cv2.imwrite(os.path.join('compare', str(i) + '_sf.png'), image3)
+#     cv2.imwrite(os.path.join('compare', str(i) + '_label.png'), result)
 
     
