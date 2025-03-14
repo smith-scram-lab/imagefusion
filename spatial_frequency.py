@@ -1,6 +1,11 @@
 import cv2
 import numpy as np
 import os
+
+import numpy as np
+import cv2
+
+
 def rf_cf(image):
     image = image.astype(np.float32)
     M, N = image.shape
@@ -22,39 +27,48 @@ def spatial_frequency(image):
     SF = np.sqrt(RF**2 + CF**2)
     return SF
 
-def fuse_images(imageA, imageB, block_size=8):
-    fused_image = np.zeros_like(imageA)
-    M, N = imageA.shape
+def fuse(image1, image2):
+    kernel_size = 7
+    edges1 = cv2.Sobel(image1, cv2.CV_64F, 1, 1, ksize=kernel_size)
+    edges2 = cv2.Sobel(image2, cv2.CV_64F, 1, 1, ksize=kernel_size)
+    edges1 = cv2.normalize(edges1, None, 0, 1, cv2.NORM_MINMAX)
+    edges2 = cv2.normalize(edges2, None, 0, 1, cv2.NORM_MINMAX)
 
-    # Iterate over blocks of the image
-    for i in range(0, M, block_size):
-        for j in range(0, N, block_size):
-            # Extract regions (blocks)
-            regionA = imageA[i:i+block_size, j:j+block_size]
-            regionB = imageB[i:i+block_size, j:j+block_size]
+    sf1 = spatial_frequency(image1)
+    sf2 = spatial_frequency(image2)
+    sf1_weight = sf1 / (sf1 + sf2 + 1e-9)  
+    sf2_weight = sf2 / (sf1 + sf2 + 1e-9)
+    if sf2_weight < sf1_weight/2:
+        sf2_weight = sf1_weight/2
+    if sf1_weight < sf2_weight/2:
+        sf1_weight = sf2_weight/2 
 
-            # Compute spatial frequencies for the regions
-            SF_A = spatial_frequency(regionA)
-            SF_B = spatial_frequency(regionB)
-
-            # Assign the pixel block from the image with the higher spatial frequency
-            if SF_A < SF_B:
-                fused_image[i:i+block_size, j:j+block_size] = regionA
-            else:
-                fused_image[i:i+block_size, j:j+block_size] = regionB
-
+    weight1 = (edges1 / (edges1 + edges2 + 1e-9) + sf1_weight)/2
+    weight2 = (edges2 / (edges1 + edges2 + 1e-9) + sf2_weight)/2
+    fused_image = weight1 * image1 + weight2 * image2 
+    fused_image = cv2.normalize(fused_image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    
     return fused_image
 
-# # just for testing
-# for i in range(956):
-#     image1 = cv2.imread(os.path.join('polar_tt_predict_C_raw', str(i) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
-#     image2 = cv2.imread(os.path.join('polar_vp_predict_C_raw', str(i) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
-#     image3 = fuse_images(image1,image2)
-#     result = cv2.imread(os.path.join('label', str(i) + '.tif'), cv2.IMREAD_GRAYSCALE)
+# def process_vp(predict):
+#     weight = np.sum(predict[predict > 0])
+#     weight = weight / (predict.shape[0] * predict.shape[1])
+#     if weight == 0:  
+#         return np.zeros_like(predict, dtype=np.uint8)
+#     scale_factor = 256 / weight
+#     predict = cv2.normalize(predict, None, 0, 1, cv2.NORM_MINMAX)
+#     new_vp = predict * scale_factor
+#     new_vp = np.clip(new_vp, 0, 255).astype(np.uint8)
+#     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+#     new_vp = clahe.apply(new_vp)
+#     return new_vp
 
-#     cv2.imwrite(os.path.join('compare', str(i) + '_tt.png'), image1)
-#     cv2.imwrite(os.path.join('compare', str(i) + '_vp.png'), image2)
-#     cv2.imwrite(os.path.join('compare', str(i) + '_sf.png'), image3)
-#     cv2.imwrite(os.path.join('compare', str(i) + '_label.png'), result)
+l = np.arange(0, 956)
+for i in range(len(l)):
+    image1 = cv2.imread(os.path.join('polar_tt_predict_C_raw', str(l[i]) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
+    image2 = cv2.imread(os.path.join('polar_vp_predict_C_raw', str(l[i]) + '_predict.png'), cv2.IMREAD_GRAYSCALE)
+    image3 = fuse(image1,image2)
+    cv2.imwrite(os.path.join('sf', str(l[i]) + '.png'), image3)
 
-    
+#fused_ is skrewed
+
