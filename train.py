@@ -59,7 +59,6 @@ dataset = SummedImageDataset(scores, transform=transforms.ToTensor())
 train_size = len(dataset) - 200
 test_size = 200
 
-# Perform random split
 train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
 # Extract actual test indices
@@ -72,7 +71,7 @@ test_dataset = [(dataset[idx][0], dataset[idx][1], idx) for idx in test_indices]
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-# Define Model
+# Model
 class ResNet(nn.Module):
     def __init__(self, num_classes=1):
         super(ResNet, self).__init__()
@@ -138,14 +137,17 @@ def explain_with_lime():
         print(f"{len(improvement_scores)} Image fits for further LIME analysis")
     
     improvement_scores.sort(key=lambda x: x[1])
+    fused_scores_for_improvement = [fused[idx] for idx, _, _ in improvement_scores]
+
+    best_idx = improvement_scores[fused_scores_for_improvement.index(max(fused_scores_for_improvement))][0]
     best_img_idx = improvement_scores[-1][0]  
     neutral_img_idx = min(improvement_scores, key=lambda x: abs(x[1]))[0]  
     worst_img_idx = improvement_scores[0][0] 
     
-    selected_indices = [idx for idx in [best_img_idx, neutral_img_idx, worst_img_idx] if 0 <= idx < 956]
+    selected_indices = [idx for idx in [best_idx, best_img_idx, neutral_img_idx, worst_img_idx] if 0 <= idx < 956]
 
 
-    if len(selected_indices) < 3:
+    if len(selected_indices) < 4:
         print(f"Insufficient valid indices for LIME analysis: {selected_indices}")
         return
     
@@ -156,7 +158,7 @@ def explain_with_lime():
 
     test_samples = [dataset[idx][0].numpy() for idx in selected_indices]
 
-    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 4, figsize=(15, 10))
     for i, (img, img_idx) in enumerate(zip(test_samples, selected_indices)):
         img = np.transpose(img, (1, 2, 0))
         
@@ -179,7 +181,7 @@ def explain_with_lime():
         axes[1, i].imshow(label_img, cmap='gray')
         axes[2, i].imshow(sf_img, cmap='gray')
         axes[1, i].axis("off")
-    
+    plt.savefig("feature_10.svg")
     plt.show()
 
 train_model()
