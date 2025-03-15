@@ -5,6 +5,7 @@ import cv2
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.colors import Normalize
 from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms, models
 import torch.nn as nn
@@ -89,7 +90,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 def train_model():
     model.train()
-    for epoch in range(10):
+    for epoch in range(3):
         running_loss = 0.0
         for images, labels, _ in train_loader:
             images, labels = images.to(device), labels.to(device)
@@ -111,6 +112,158 @@ def test_model():
             indices.extend(idx.cpu().numpy())
     return predictions, true_labels, indices
 
+# def explain_with_lime():
+#     model.eval()
+#     explainer = lime_image.LimeImageExplainer()
+    
+#     improvement_scores = []
+#     for i in range(len(test_dataset)):
+#         img, actual_score, idx = test_dataset[i]
+#         img_tensor = img.unsqueeze(0).to(device, dtype=torch.float32)
+        
+#         with torch.no_grad():
+#             pred_score = model(img_tensor).cpu().numpy().max()
+        
+#         deviation = pred_score - actual_score.numpy().max()
+#         if abs(deviation) <= 0.07:
+#             print(f"SELECTED: at index {idx}", actual_score.numpy())
+#             print(f"SELECTED: at index {idx}, fused score:{fused[idx]}, d = {deviation}")
+
+#             improvement_scores.append((idx, actual_score.numpy().max(), pred_score))
+    
+#     if len(improvement_scores) < 3:
+#         print("Not enough accurately predicted samples for LIME visualization.")
+#         return
+#     else:
+#         print(f"{len(improvement_scores)} Image fits for further LIME analysis")
+    
+#     improvement_scores.sort(key=lambda x: x[1])
+#     fused_scores_for_improvement = [fused[idx] for idx, _, _ in improvement_scores]
+
+#     best_idx = improvement_scores[fused_scores_for_improvement.index(max(fused_scores_for_improvement))][0]
+#     best_img_idx = improvement_scores[-1][0]  
+#     neutral_img_idx = min(improvement_scores, key=lambda x: abs(x[1]))[0]  
+#     worst_img_idx = improvement_scores[0][0] 
+    
+#     selected_indices = [idx for idx in [best_idx, best_img_idx, neutral_img_idx, worst_img_idx] if 0 <= idx < 956]
+
+
+#     if len(selected_indices) < 4:
+#         print(f"Insufficient valid indices for LIME analysis: {selected_indices}")
+#         return
+    
+#     for idx in selected_indices:
+#         actual_score = scores[idx]  
+#         print(f"PRINTED: at index {idx}, actual score: {actual_score}")
+#         print(f"PRINTED: at index {idx}, fused score: {fused[idx]}, TT score: {tt[idx]}, VP score:{vp[idx]}")
+
+#     test_samples = [dataset[idx][0].numpy() for idx in selected_indices]
+
+#     fig, axes = plt.subplots(3, 4, figsize=(15, 10))
+#     for i, (img, img_idx) in enumerate(zip(test_samples, selected_indices)):
+#         img = np.transpose(img, (1, 2, 0))
+        
+#         def model_predict(images):
+#             images = np.transpose(images, (0, 3, 1, 2))
+#             images = torch.tensor(images, dtype=torch.float32).to(device)
+#             with torch.no_grad():
+#                 return model(images).cpu().numpy()
+        
+#         explanation = explainer.explain_instance(
+#             img, model_predict, top_labels=1, num_samples=1000, 
+#             segmentation_fn=lambda x: slic(x, n_segments=100, compactness=5)
+#         )
+#         temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], num_features=5, hide_rest=False)
+#         axes[0, i].imshow(mark_boundaries(temp, mask))
+#         axes[0, i].axis("off")
+        
+#         label_img = cv2.imread(os.path.join("label", f"{img_idx}.tif"),cv2.IMREAD_GRAYSCALE)
+#         sf_img = cv2.imread(os.path.join("sf", f"{img_idx}.png"),cv2.IMREAD_GRAYSCALE)
+#         axes[1, i].imshow(label_img, cmap='gray')
+#         axes[2, i].imshow(sf_img, cmap='gray')
+#         axes[1, i].axis("off")
+#     plt.savefig("feature_10.svg")
+#     plt.show()
+# def explain_with_lime():
+#     model.eval()
+#     explainer = lime_image.LimeImageExplainer()
+    
+#     improvement_scores = []
+#     for i in range(len(test_dataset)):
+#         img, actual_score, idx = test_dataset[i]
+#         img_tensor = img.unsqueeze(0).to(device, dtype=torch.float32)
+        
+#         with torch.no_grad():
+#             pred_score = model(img_tensor).cpu().numpy().max()
+        
+#         deviation = pred_score - actual_score.numpy().max()
+#         if abs(deviation) <= 0.07:
+#             print(f"SELECTED: at index {idx}, fused score:{fused[idx]}, d = {deviation}")
+#             improvement_scores.append((idx, actual_score.numpy().max(), pred_score))
+    
+#     if len(improvement_scores) < 3:
+#         print("Not enough accurately predicted samples for LIME visualization.")
+#         return
+    
+#     print(f"{len(improvement_scores)} Image fits for further LIME analysis")
+#     improvement_scores.sort(key=lambda x: x[1])
+#     fused_scores_for_improvement = [fused[idx] for idx, _, _ in improvement_scores]
+
+#     best_idx = improvement_scores[fused_scores_for_improvement.index(max(fused_scores_for_improvement))][0]
+#     best_img_idx = improvement_scores[-1][0]  
+#     neutral_img_idx = min(improvement_scores, key=lambda x: abs(x[1]))[0]  
+#     worst_img_idx = improvement_scores[0][0] 
+    
+#     selected_indices = [idx for idx in [best_idx, best_img_idx, neutral_img_idx, worst_img_idx] if 0 <= idx < 956]
+
+#     if len(selected_indices) < 4:
+#         print(f"Insufficient valid indices for LIME analysis: {selected_indices}")
+#         return
+    
+#     for idx in selected_indices:
+#         print(f"PRINTED: at index {idx}, fused score: {fused[idx]}")
+
+#     test_samples = [dataset[idx][0].numpy() for idx in selected_indices]
+
+#     fig, axes = plt.subplots(3, 4, figsize=(15, 10))
+#     for i, (img, img_idx) in enumerate(zip(test_samples, selected_indices)):
+#         img = np.transpose(img, (1, 2, 0))
+        
+#         def model_predict(images):
+#             images = np.transpose(images, (0, 3, 1, 2))
+#             images = torch.tensor(images, dtype=torch.float32).to(device)
+#             with torch.no_grad():
+#                 return model(images).cpu().numpy()
+        
+#         explanation = explainer.explain_instance(
+#             img, model_predict, top_labels=1, num_samples=1000, 
+#             segmentation_fn=lambda x: slic(x, n_segments=100, compactness=5)
+#         )
+        
+#         # Get heatmap visualization
+#         heatmap = explanation.get_image_and_mask(
+#             explanation.top_labels[0], positive_only=False, num_features=5, hide_rest=False
+#         )[1]  # The second returned value is the mask
+
+#         # Convert to color heatmap
+#         heatmap_colored = np.zeros((*heatmap.shape, 3), dtype=np.uint8)
+#         heatmap_colored[heatmap == 1] = [0, 255, 0]  # Green for positive
+#         heatmap_colored[heatmap == -1] = [255, 0, 0]  # Red for negative
+        
+#         overlay = cv2.addWeighted(img.astype(np.uint8), 0.6, heatmap_colored, 0.4, 0)
+
+#         axes[0, i].imshow(mark_boundaries(overlay, heatmap))
+#         axes[0, i].axis("off")
+        
+#         label_img = cv2.imread(os.path.join("label", f"{img_idx}.tif"), cv2.IMREAD_GRAYSCALE)
+#         sf_img = cv2.imread(os.path.join("sf", f"{img_idx}.png"), cv2.IMREAD_GRAYSCALE)
+#         axes[1, i].imshow(label_img, cmap='gray')
+#         axes[2, i].imshow(sf_img, cmap='gray')
+#         axes[1, i].axis("off")
+    
+#     plt.savefig("feature_10.svg")
+#     plt.show()
+
 def explain_with_lime():
     model.eval()
     explainer = lime_image.LimeImageExplainer()
@@ -127,14 +280,11 @@ def explain_with_lime():
         if abs(deviation) <= 0.07:
             print(f"SELECTED: at index {idx}", actual_score.numpy())
             print(f"SELECTED: at index {idx}, fused score:{fused[idx]}, d = {deviation}")
-
             improvement_scores.append((idx, actual_score.numpy().max(), pred_score))
     
     if len(improvement_scores) < 3:
         print("Not enough accurately predicted samples for LIME visualization.")
         return
-    else:
-        print(f"{len(improvement_scores)} Image fits for further LIME analysis")
     
     improvement_scores.sort(key=lambda x: x[1])
     fused_scores_for_improvement = [fused[idx] for idx, _, _ in improvement_scores]
@@ -142,10 +292,9 @@ def explain_with_lime():
     best_idx = improvement_scores[fused_scores_for_improvement.index(max(fused_scores_for_improvement))][0]
     best_img_idx = improvement_scores[-1][0]  
     neutral_img_idx = min(improvement_scores, key=lambda x: abs(x[1]))[0]  
-    worst_img_idx = improvement_scores[0][0] 
+    worst_img_idx = improvement_scores[0][0]  
     
     selected_indices = [idx for idx in [best_idx, best_img_idx, neutral_img_idx, worst_img_idx] if 0 <= idx < 956]
-
 
     if len(selected_indices) < 4:
         print(f"Insufficient valid indices for LIME analysis: {selected_indices}")
@@ -172,16 +321,29 @@ def explain_with_lime():
             img, model_predict, top_labels=1, num_samples=1000, 
             segmentation_fn=lambda x: slic(x, n_segments=100, compactness=5)
         )
-        temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], num_features=5, hide_rest=False)
-        axes[0, i].imshow(mark_boundaries(temp, mask))
+        
+        temp, mask = explanation.get_image_and_mask(
+            explanation.top_labels[0], num_features=5, hide_rest=False, positive_only=False
+        )
+        
+        heatmap = np.zeros_like(img)
+        heatmap[mask == 1] = [0, 255, 0]  # Green for positive
+        heatmap[mask == -1] = [255, 0, 0]  # Red for negative
+
+        # Add the heatmap directly to the grayscale image
+        overlay = img + heatmap  # Element-wise addition
+        overlay = np.clip(overlay, 0, 255)
+
+        axes[0, i].imshow(overlay)
         axes[0, i].axis("off")
         
-        label_img = cv2.imread(os.path.join("label", f"{img_idx}.tif"),cv2.IMREAD_GRAYSCALE)
-        sf_img = cv2.imread(os.path.join("sf", f"{img_idx}.png"),cv2.IMREAD_GRAYSCALE)
+        label_img = cv2.imread(os.path.join("label", f"{img_idx}.tif"), cv2.IMREAD_GRAYSCALE)
+        sf_img = cv2.imread(os.path.join("sf", f"{img_idx}.png"), cv2.IMREAD_GRAYSCALE)
         axes[1, i].imshow(label_img, cmap='gray')
         axes[2, i].imshow(sf_img, cmap='gray')
         axes[1, i].axis("off")
-    plt.savefig("feature_10.svg")
+    
+    plt.savefig("feature_selected2.svg")
     plt.show()
 
 train_model()
